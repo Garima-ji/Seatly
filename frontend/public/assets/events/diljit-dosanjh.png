@@ -1,0 +1,19 @@
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="diljit-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1A1A1A" />
+      <stop offset="100%" stop-color="#0A0A0A" />
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="400" height="400" rx="30" fill="url(#diljit-bg)" />
+  <!-- Turban Silhouette -->
+  <ellipse cx="200" cy="115" rx="55" ry="38" fill="#FFFFFF" opacity="0.95" />
+  <circle cx="200" cy="155" r="38" fill="#F1F5F9" />
+  <!-- Beard & Sunglasses -->
+  <rect x="180" y="145" width="40" height="12" rx="4" fill="#0F172A" />
+  <path d="M 175 165 Q 200 205 225 165 Z" fill="#1E293B" />
+  <!-- Iconic Tour Outfit -->
+  <path d="M 120 280 Q 200 210 280 280 L 320 400 L 80 400 Z" fill="#E2E8F0" />
+  <rect x="185" y="240" width="30" height="160" fill="#0F172A" />
+</svg>

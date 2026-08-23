@@ -1,0 +1,234 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Base ────────────────────────────────────────────────────────────────── */
+@layer base {
+  :root {
+    --background: 45 100% 99%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 38 92% 50%;
+    --primary-foreground: 24 95% 10%;
+    --secondary: 48 100% 96%;
+    --secondary-foreground: 28 80% 25%;
+    --muted: 45 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 48 96% 89%;
+    --accent-foreground: 28 80% 25%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 45 30% 90%;
+    --input: 45 30% 90%;
+    --ring: 38 92% 50%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 43 96% 56%;
+    --primary-foreground: 24 95% 10%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 38 92% 50%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 43 96% 56%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 font-sans antialiased;
+    @apply dark:bg-slate-950 dark:text-slate-50;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight;
+  }
+}
+
+/* ─── Custom scrollbar ────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-slate-100 dark:bg-slate-900;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-amber-300 dark:bg-amber-800 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-amber-400 dark:bg-amber-600;
+}
+
+/* ─── Seat map ────────────────────────────────────────────────────────────── */
+.seat-grid {
+  display: grid;
+  gap: 3px;
+  justify-items: center;
+}
+
+.seat-tile {
+  @apply relative flex items-center justify-center rounded-[5px] sm:rounded-md cursor-pointer
+         transition-all duration-150 select-none font-extrabold text-[8px] sm:text-[9px] md:text-[10px];
+  width: 20px;
+  height: 20px;
+}
+
+@media (min-width: 640px) {
+  .seat-tile {
+    width: 23px;
+    height: 23px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .seat-tile {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .seat-tile {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+.seat-tile:focus-visible {
+  @apply outline-none ring-2 ring-[#D4F63B] ring-offset-1;
+}
+
+/* Available */
+.seat-available {
+  @apply bg-[#F2F2EE] text-slate-700 hover:bg-[#E8E8E2] border border-slate-200/50
+         dark:bg-[#1E2028] dark:text-slate-300 dark:border-slate-800 dark:hover:bg-[#282B36];
+}
+
+/* Selected (active pick) */
+.seat-selected {
+  @apply bg-[#D4F63B] text-slate-950 font-extrabold shadow-sm scale-105 border border-[#BDE41F]
+         dark:bg-[#D4F63B] dark:text-slate-950;
+}
+
+/* Held by current user (Your hold) */
+.seat-held-mine {
+  @apply bg-[#FDE8B3] text-[#7A4B00] font-bold border border-[#FCD278]
+         dark:bg-[#7A4B00]/60 dark:text-[#FDE8B3];
+}
+
+/* Held by current user — WARNING state (≤60s) */
+.seat-held-mine-warning {
+  @apply bg-red-400 border border-red-500 text-white animate-pulse;
+}
+
+/* Held by someone else */
+.seat-held-other {
+  @apply bg-[#D8DFFB] text-[#2A3B8C] font-semibold cursor-not-allowed border border-[#B3C0F8]
+         dark:bg-[#2A3B8C]/40 dark:text-[#D8DFFB];
+}
+
+/* Booked / sold */
+.seat-booked {
+  @apply bg-[#606470] text-slate-200 cursor-not-allowed border border-[#4C505C]
+         dark:bg-[#2D3039] dark:text-slate-400 dark:border-slate-700;
+}
+
+/* Waitlist-only (category sold out) */
+.seat-waitlist {
+  @apply bg-[#FAF7ED] border-2 border-dashed border-amber-400 text-amber-800 cursor-pointer
+         hover:bg-amber-100
+         dark:bg-amber-950/40 dark:border-amber-500 dark:text-amber-300;
+}
+
+/* Aisle — invisible spacer */
+.seat-aisle {
+  visibility: hidden;
+}
+
+/* ─── Glass card ──────────────────────────────────────────────────────────── */
+.glass {
+  @apply bg-white/85 backdrop-blur-md border border-slate-200/60
+         dark:bg-slate-900/85 dark:border-slate-800;
+}
+
+/* ─── Gradient text ───────────────────────────────────────────────────────── */
+.gradient-text {
+  @apply bg-gradient-to-r from-yellow-400 via-amber-400 to-orange-400 bg-clip-text text-transparent;
+}
+
+/* ─── Card hover effect ───────────────────────────────────────────────────── */
+.card-hover {
+  @apply transition-all duration-200 hover:scale-[1.02] hover:shadow-xl hover:border-amber-300/60 dark:hover:border-amber-500/40;
+}
+
+/* ─── Input styles ────────────────────────────────────────────────────────── */
+.input {
+  @apply w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900
+         placeholder-slate-400 text-sm
+         focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500
+         dark:bg-slate-800/90 dark:border-slate-700 dark:text-slate-100
+         dark:placeholder-slate-500 dark:focus:ring-amber-400
+         transition-all duration-150;
+}
+
+/* ─── Button base ─────────────────────────────────────────────────────────── */
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl font-semibold
+         transition-all duration-150 focus:outline-none focus:ring-2
+         focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-primary {
+  @apply btn bg-gradient-to-r from-amber-500 via-amber-500 to-orange-500 text-slate-950 font-bold
+         hover:from-amber-400 hover:via-amber-400 hover:to-orange-400
+         focus:ring-amber-400 shadow-md shadow-amber-500/25 active:scale-95;
+}
+
+.btn-secondary {
+  @apply btn bg-slate-100 text-slate-700 hover:bg-amber-50 hover:text-amber-900 border border-slate-200
+         dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:border-slate-700
+         focus:ring-amber-400 active:scale-95;
+}
+
+.btn-danger {
+  @apply btn bg-red-500 text-white hover:bg-red-600 focus:ring-red-500
+         shadow-md shadow-red-200 dark:shadow-red-900 active:scale-95;
+}
+
+.btn-sm {
+  @apply text-xs px-3 py-1.5;
+}
+
+.btn-md {
+  @apply text-sm px-5 py-2.5;
+}
+
+.btn-lg {
+  @apply text-base px-7 py-3;
+}

@@ -1,0 +1,38 @@
+<svg width="600" height="400" viewBox="0 0 600 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="600" height="400" fill="#0A0A0C" />
+  <!-- Spotlight Gradients -->
+  <polygon points="300,0 50,400 550,400" fill="url(#hero-crowd-light)" opacity="0.3" />
+  <polygon points="200,0 0,400 350,400" fill="url(#hero-crowd-light2)" opacity="0.2" />
+  <polygon points="400,0 250,400 600,400" fill="url(#hero-crowd-light2)" opacity="0.2" />
+  
+  <!-- Crowd Silhouette and raised hands -->
+  <g fill="#18181B">
+    <circle cx="80" cy="310" r="28" />
+    <circle cx="160" cy="290" r="32" />
+    <circle cx="250" cy="275" r="30" />
+    <circle cx="340" cy="285" r="35" />
+    <circle cx="430" cy="300" r="30" />
+    <circle cx="510" cy="320" r="26" />
+    
+    <!-- Hands reaching up -->
+    <path d="M 130 290 L 140 200 L 150 200 L 145 290 Z" />
+    <path d="M 230 270 L 245 170 L 255 170 L 245 270 Z" />
+    <path d="M 270 270 L 290 150 L 305 150 L 285 270 Z" />
+    <path d="M 360 280 L 375 180 L 385 180 L 375 280 Z" />
+    <path d="M 460 295 L 480 220 L 490 220 L 475 295 Z" />
+    
+    <!-- Crowd Base Mass -->
+    <path d="M 0 330 Q 150 280 300 310 T 600 320 L 600 400 L 0 400 Z" />
+  </g>
+  
+  <defs>
+    <linearGradient id="hero-crowd-light" x1="300" y1="0" x2="300" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#D4F63B" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#D4F63B" stop-opacity="0" />
+    </linearGradient>
+    <linearGradient id="hero-crowd-light2" x1="300" y1="0" x2="300" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+</svg>

@@ -1,0 +1,20 @@
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="dune-sky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1E1B18" />
+      <stop offset="50%" stop-color="#3D2614" />
+      <stop offset="100%" stop-color="#C28D52" />
+    </linearGradient>
+  </defs>
+  <!-- Background Desert Mood -->
+  <rect width="400" height="400" rx="30" fill="url(#dune-sky)" />
+  <!-- Desert Dunes -->
+  <path d="M 0 320 Q 150 260 300 340 L 400 310 L 400 400 L 0 400 Z" fill="#966336" />
+  <path d="M 0 360 Q 220 300 400 370 L 400 400 L 0 400 Z" fill="#6B411D" />
+  <!-- Paul Atreides Silhouette with Cloak -->
+  <ellipse cx="200" cy="150" rx="35" ry="42" fill="#0A0A0B" />
+  <path d="M 140 280 Q 200 170 260 280 L 310 400 L 90 400 Z" fill="#18181B" />
+  <!-- Fremen Blue Eyes Glow -->
+  <circle cx="190" cy="150" r="3" fill="#38BDF8" filter="drop-shadow(0 0 4px #0284C7)" />
+  <circle cx="210" cy="150" r="3" fill="#38BDF8" filter="drop-shadow(0 0 4px #0284C7)" />
+</svg>
