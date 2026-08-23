@@ -7,7 +7,7 @@
 
 ## 🚀 Live Deployments
 
-* **Frontend:** Deployed on **Vercel** (e.g., `https://your-seatly-app.vercel.app`)
+* **Frontend:** Deployed on **Vercel** (e.g., `https://seatly-nu.vercel.app/`)
 * **Backend API:** Deployed on **Hugging Face Spaces** (Gradio SDK running a Node.js process proxy)
 * **Database:** Hosted on **Supabase PostgreSQL** (utilizing the IPv4 Session Pooler)
 * **Cache/PubSub:** Hosted on **Upstash Serverless Redis**
