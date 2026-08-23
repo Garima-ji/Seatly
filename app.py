@@ -3,6 +3,15 @@ import sys
 import urllib.request
 import subprocess
 
+# Bypass Hugging Face ZeroGPU startup requirement
+try:
+    import spaces
+    @spaces.GPU
+    def dummy_gpu_function():
+        pass
+except Exception:
+    pass
+
 # Define Node.js version and paths
 NODE_VERSION = "v20.11.0"
 NODE_TAR = f"node-{NODE_VERSION}-linux-x64.tar.xz"
