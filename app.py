@@ -3,7 +3,11 @@ import sys
 import urllib.request
 import subprocess
 
-# Bypass Hugging Face ZeroGPU startup requirement
+# 1. Install httpx for proxying requests
+print("--> Installing python HTTP proxy client...", flush=True)
+subprocess.run("pip install httpx gradio", shell=True)
+
+# 2. Bypass Hugging Face ZeroGPU startup requirement
 try:
     import spaces
     @spaces.GPU
@@ -39,23 +43,116 @@ if not node_installed:
 subprocess.run("node -v", shell=True)
 subprocess.run("npm -v", shell=True)
 
-# 1. Install backend node modules
+# 3. Install backend node modules
 print("--> Installing Seatly backend dependencies...", flush=True)
 subprocess.run("npm install", shell=True, cwd="./backend")
 
-# 2. Compile TypeScript to JavaScript
+# 4. Compile TypeScript to JavaScript
 print("--> Building Seatly backend...", flush=True)
 subprocess.run("npm run build", shell=True, cwd="./backend")
 
-# 3. Force the port to 7860 (Hugging Face default)
-os.environ["PORT"] = "7860"
+# 5. Set Express port to 4000 (Internal)
+os.environ["PORT"] = "4000"
 
-# 4. Run migrations
+# 6. Run migrations
 print("--> Running database migrations...", flush=True)
 subprocess.run("npm run migrate", shell=True, cwd="./backend")
 
-# 5. Start the Express server
-print("--> Starting Seatly Server on port 7860...", flush=True)
-sys.exit(
-    subprocess.run("npm run start", shell=True, cwd="./backend").returncode
-)
+# 7. Start the Express server in the background
+print("--> Starting Seatly Server on port 4000 in the background...", flush=True)
+express_proc = subprocess.Popen("npm run start", shell=True, cwd="./backend")
+
+# 8. Start Gradio and FastAPI Reverse Proxy on port 7860
+import gradio as gr
+from fastapi import Request
+from fastapi.responses import Response
+import httpx
+
+EXPRESS_URL = "http://127.0.0.1:4000"
+
+with gr.Blocks() as demo:
+    gr.Markdown("# 🎟️ Seatly API Backend (ZeroGPU Proxy Gateway)")
+    gr.Markdown("The Seatly Express backend is running in the background and served via this proxy.")
+
+app = demo.app
+
+@app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
+async def proxy_api(request: Request, path: str):
+    async with httpx.AsyncClient() as client:
+        method = request.method
+        headers = dict(request.headers)
+        headers.pop("host", None)
+        params = dict(request.query_params)
+        body = await request.body()
+        
+        try:
+            res = await client.request(
+                method,
+                f"{EXPRESS_URL}/api/{path}",
+                headers=headers,
+                params=params,
+                content=body,
+                timeout=60.0
+            )
+            return Response(
+                content=res.content,
+                status_code=res.status_code,
+                headers=dict(res.headers)
+            )
+        except Exception as e:
+            return Response(content=f"Proxy error: {str(e)}", status_code=502)
+
+@app.api_route("/auth/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
+async def proxy_auth(request: Request, path: str):
+    async with httpx.AsyncClient() as client:
+        method = request.method
+        headers = dict(request.headers)
+        headers.pop("host", None)
+        params = dict(request.query_params)
+        body = await request.body()
+        
+        try:
+            res = await client.request(
+                method,
+                f"{EXPRESS_URL}/auth/{path}",
+                headers=headers,
+                params=params,
+                content=body,
+                timeout=60.0
+            )
+            return Response(
+                content=res.content,
+                status_code=res.status_code,
+                headers=dict(res.headers)
+            )
+        except Exception as e:
+            return Response(content=f"Proxy error: {str(e)}", status_code=502)
+
+@app.api_route("/socket.io/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
+async def proxy_socket(request: Request, path: str):
+    async with httpx.AsyncClient() as client:
+        method = request.method
+        headers = dict(request.headers)
+        headers.pop("host", None)
+        params = dict(request.query_params)
+        body = await request.body()
+        
+        try:
+            res = await client.request(
+                method,
+                f"{EXPRESS_URL}/socket.io/{path}",
+                headers=headers,
+                params=params,
+                content=body,
+                timeout=60.0
+            )
+            return Response(
+                content=res.content,
+                status_code=res.status_code,
+                headers=dict(res.headers)
+            )
+        except Exception as e:
+            return Response(content=f"Proxy error: {str(e)}", status_code=502)
+
+print("--> Launching Gradio Proxy Gateway on port 7860...", flush=True)
+demo.launch(server_name="0.0.0.0", server_port=7860)
