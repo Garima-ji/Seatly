@@ -1,6 +1,7 @@
 import os
 import sys
 import urllib.request
+import urllib.error
 import subprocess
 import threading
 import traceback
@@ -77,6 +78,7 @@ threading.Thread(target=setup_and_start_express, daemon=True).start()
 import gradio as gr
 from fastapi import Request
 from fastapi.responses import Response
+from fastapi.routing import APIRoute
 
 EXPRESS_URL = "http://127.0.0.1:4000"
 
@@ -131,17 +133,20 @@ async def proxy_request(request: Request, path: str, prefix: str):
             status_code=502
         )
 
-@app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
 async def proxy_api(request: Request, path: str):
     return await proxy_request(request, path, "api")
 
-@app.api_route("/auth/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
 async def proxy_auth(request: Request, path: str):
     return await proxy_request(request, path, "auth")
 
-@app.api_route("/socket.io/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
 async def proxy_socket(request: Request, path: str):
     return await proxy_request(request, path, "socket.io")
+
+# Prepend our proxy routes to the very beginning of Uvicorn's route mapping list
+methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
+app.routes.insert(0, APIRoute("/api/{path:path}", proxy_api, methods=methods))
+app.routes.insert(0, APIRoute("/auth/{path:path}", proxy_auth, methods=methods))
+app.routes.insert(0, APIRoute("/socket.io/{path:path}", proxy_socket, methods=methods))
 
 print("--> Launching Gradio Proxy Gateway...", flush=True)
 demo.launch()
