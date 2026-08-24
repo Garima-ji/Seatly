@@ -74,8 +74,6 @@ import gradio as gr
 from fastapi import Request
 from fastapi.responses import Response
 
-EXPRESS_URL = "http://127.0.0.1:4000"
-
 with gr.Blocks() as demo:
     gr.Markdown("# 🎟️ Seatly API Backend (ZeroGPU Proxy Gateway)")
     gr.Markdown("The Seatly Express backend is running in the background and served via this proxy.")
@@ -85,53 +83,10 @@ app = demo.app
 # Custom HTTP Middleware to intercept and proxy API, Auth, and WebSocket connection requests
 @app.middleware("http")
 async def reverse_proxy_middleware(request: Request, call_next):
-    path = request.url.path
-    if path.startswith("/api/") or path.startswith("/auth/") or path.startswith("/socket.io/"):
-        method = request.method
-        headers = dict(request.headers)
-        headers.pop("host", None)
-        headers.pop("connection", None)  # Prevent keep-alive issues in urllib
-        
-        query_string = request.url.query
-        url = f"{EXPRESS_URL}{path}"
-        if query_string:
-            url += f"?{query_string}"
-            
-        body = await request.body()
-        
-        req = urllib.request.Request(
-            url,
-            data=body if body else None,
-            headers=headers,
-            method=method
-        )
-        
-        try:
-            with urllib.request.urlopen(req, timeout=60.0) as res:
-                res_body = res.read()
-                res_headers = dict(res.headers)
-                return Response(
-                    content=res_body,
-                    status_code=res.status,
-                    headers=res_headers
-                )
-        except urllib.error.HTTPError as e:
-            # Pass non-2xx status codes (400, 401, 403, etc.) directly to the client
-            res_body = e.read()
-            res_headers = dict(e.headers)
-            return Response(
-                content=res_body,
-                status_code=e.code,
-                headers=res_headers
-            )
-        except Exception as e:
-            return Response(
-                content=f"Proxy error: {str(e)}",
-                status_code=502
-            )
-            
-    # For all other paths, continue normally to Gradio routes
-    return await call_next(request)
+    return Response(
+        content=f"DIAGNOSTIC - Method: {request.method}, Path: {request.url.path}, Headers: {dict(request.headers)}",
+        status_code=200
+    )
 
 print("--> Launching Gradio Proxy Gateway...", flush=True)
 demo.launch()
