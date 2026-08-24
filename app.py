@@ -175,8 +175,8 @@ try:
             except Exception as e:
                 return Response(content=f"Proxy error: {str(e)}", status_code=502)
 
-    print("--> Launching Gradio Proxy Gateway on port 7860...", flush=True)
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    print("--> Launching Gradio Proxy Gateway...", flush=True)
+    demo.launch()
 
 except Exception as main_err:
     log_and_push_error(traceback.format_exc())
