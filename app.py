@@ -78,7 +78,6 @@ threading.Thread(target=setup_and_start_express, daemon=True).start()
 import gradio as gr
 from fastapi import Request
 from fastapi.responses import Response
-from fastapi.routing import APIRoute
 
 EXPRESS_URL = "http://127.0.0.1:4000"
 
@@ -88,65 +87,56 @@ with gr.Blocks() as demo:
 
 app = demo.app
 
-async def proxy_request(request: Request, path: str, prefix: str):
-    method = request.method
-    headers = dict(request.headers)
-    headers.pop("host", None)
-    headers.pop("connection", None)  # Prevent keep-alive routing issues in urllib
-    
-    query_string = request.url.query
-    url = f"{EXPRESS_URL}/{prefix}/{path}"
-    if query_string:
-        url += f"?{query_string}"
+# Custom HTTP Middleware to intercept and proxy API, Auth, and WebSocket connection requests
+@app.middleware("http")
+async def reverse_proxy_middleware(request: Request, call_next):
+    path = request.url.path
+    if path.startswith("/api/") or path.startswith("/auth/") or path.startswith("/socket.io/"):
+        method = request.method
+        headers = dict(request.headers)
+        headers.pop("host", None)
+        headers.pop("connection", None)  # Prevent keep-alive issues in urllib
         
-    body = await request.body()
-    
-    # Construct the proxy request using urllib
-    req = urllib.request.Request(
-        url,
-        data=body if body else None,
-        headers=headers,
-        method=method
-    )
-    
-    try:
-        with urllib.request.urlopen(req, timeout=60.0) as res:
-            res_body = res.read()
-            res_headers = dict(res.headers)
+        query_string = request.url.query
+        url = f"{EXPRESS_URL}{path}"
+        if query_string:
+            url += f"?{query_string}"
+            
+        body = await request.body()
+        
+        req = urllib.request.Request(
+            url,
+            data=body if body else None,
+            headers=headers,
+            method=method
+        )
+        
+        try:
+            with urllib.request.urlopen(req, timeout=60.0) as res:
+                res_body = res.read()
+                res_headers = dict(res.headers)
+                return Response(
+                    content=res_body,
+                    status_code=res.status,
+                    headers=res_headers
+                )
+        except urllib.error.HTTPError as e:
+            # Pass non-2xx status codes (400, 401, 403, etc.) directly to the client
+            res_body = e.read()
+            res_headers = dict(e.headers)
             return Response(
                 content=res_body,
-                status_code=res.status,
+                status_code=e.code,
                 headers=res_headers
             )
-    except urllib.error.HTTPError as e:
-        # urllib throws HTTPError for non-2xx statuses; return it directly to client
-        res_body = e.read()
-        res_headers = dict(e.headers)
-        return Response(
-            content=res_body,
-            status_code=e.code,
-            headers=res_headers
-        )
-    except Exception as e:
-        return Response(
-            content=f"Proxy error: {str(e)}",
-            status_code=502
-        )
-
-async def proxy_api(request: Request, path: str):
-    return await proxy_request(request, path, "api")
-
-async def proxy_auth(request: Request, path: str):
-    return await proxy_request(request, path, "auth")
-
-async def proxy_socket(request: Request, path: str):
-    return await proxy_request(request, path, "socket.io")
-
-# Prepend our proxy routes to the very beginning of Uvicorn's route mapping list
-methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
-app.routes.insert(0, APIRoute("/api/{path:path}", proxy_api, methods=methods))
-app.routes.insert(0, APIRoute("/auth/{path:path}", proxy_auth, methods=methods))
-app.routes.insert(0, APIRoute("/socket.io/{path:path}", proxy_socket, methods=methods))
+        except Exception as e:
+            return Response(
+                content=f"Proxy error: {str(e)}",
+                status_code=502
+            )
+            
+    # For all other paths, continue normally to Gradio routes
+    return await call_next(request)
 
 print("--> Launching Gradio Proxy Gateway...", flush=True)
 demo.launch()
