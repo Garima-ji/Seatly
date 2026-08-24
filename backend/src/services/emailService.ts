@@ -79,8 +79,8 @@ export function sendBookingConfirmation(data: BookingEmailData): void {
               filename: 'ticket-qr.png',
               type: 'image/png',
               disposition: 'inline',
-              contentId: 'qrCode',
-            },
+              content_id: 'qrCode',
+            } as any,
           ],
         }),
       data.orderId
