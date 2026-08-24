@@ -4,13 +4,11 @@ import urllib.request
 import urllib.error
 import subprocess
 import threading
-import traceback
+import uvicorn
+from fastapi import FastAPI, Request
+from fastapi.responses import Response
 
-# 1. Self-heal corrupted huggingface_hub package version
-print("--> Checking and self-healing Python package environment...", flush=True)
-subprocess.run("pip install --upgrade huggingface_hub==0.19.4", shell=True)
-
-# 2. Bypass Hugging Face ZeroGPU startup requirement
+# 1. Bypass Hugging Face ZeroGPU static check
 try:
     import spaces
     @spaces.GPU
@@ -74,69 +72,77 @@ def setup_and_start_express():
 print("--> Launching background setup thread for Node.js backend...", flush=True)
 threading.Thread(target=setup_and_start_express, daemon=True).start()
 
-# 3. Start Gradio and FastAPI Reverse Proxy on port 7860 instantly in main thread
-import gradio as gr
-from fastapi import Request
-from fastapi.responses import Response
+# 2. Initialize Pure FastAPI Server (Bypasses Gradio dependencies entirely)
+app = FastAPI(title="Seatly Gateway API")
 
 EXPRESS_URL = "http://127.0.0.1:4000"
 
-with gr.Blocks() as demo:
-    gr.Markdown("# 🎟️ Seatly API Backend (ZeroGPU Proxy Gateway)")
-    gr.Markdown("The Seatly Express backend is running in the background and served via this proxy.")
-
-app = demo.app
-
-# Custom HTTP Middleware to intercept and proxy API, Auth, and WebSocket connection requests
-@app.middleware("http")
-async def reverse_proxy_middleware(request: Request, call_next):
-    path = request.url.path
-    if path.startswith("/api/") or path.startswith("/auth/") or path.startswith("/socket.io/"):
-        method = request.method
-        headers = dict(request.headers)
-        headers.pop("host", None)
-        headers.pop("connection", None)  # Prevent keep-alive issues in urllib
+async def proxy_request(request: Request, path: str, prefix: str):
+    method = request.method
+    headers = dict(request.headers)
+    headers.pop("host", None)
+    headers.pop("connection", None)  # Prevent keep-alive routing issues in urllib
+    
+    query_string = request.url.query
+    url = f"{EXPRESS_URL}/{prefix}/{path}"
+    if query_string:
+        url += f"?{query_string}"
         
-        query_string = request.url.query
-        url = f"{EXPRESS_URL}{path}"
-        if query_string:
-            url += f"?{query_string}"
-            
-        body = await request.body()
-        
-        req = urllib.request.Request(
-            url,
-            data=body if body else None,
-            headers=headers,
-            method=method
-        )
-        
-        try:
-            with urllib.request.urlopen(req, timeout=60.0) as res:
-                res_body = res.read()
-                res_headers = dict(res.headers)
-                return Response(
-                    content=res_body,
-                    status_code=res.status,
-                    headers=res_headers
-                )
-        except urllib.error.HTTPError as e:
-            # Pass non-2xx status codes (400, 401, 403, etc.) directly to the client
-            res_body = e.read()
-            res_headers = dict(e.headers)
+    body = await request.body()
+    
+    # Construct the proxy request using urllib
+    req = urllib.request.Request(
+        url,
+        data=body if body else None,
+        headers=headers,
+        method=method
+    )
+    
+    try:
+        with urllib.request.urlopen(req, timeout=60.0) as res:
+            res_body = res.read()
+            res_headers = dict(res.headers)
             return Response(
                 content=res_body,
-                status_code=e.code,
+                status_code=res.status,
                 headers=res_headers
             )
-        except Exception as e:
-            return Response(
-                content=f"Proxy error: {str(e)}",
-                status_code=502
-            )
-            
-    # For all other paths, continue normally to Gradio routes
-    return await call_next(request)
+    except urllib.error.HTTPError as e:
+        # Pass non-2xx status codes (400, 401, 403, etc.) directly to the client
+        res_body = e.read()
+        res_headers = dict(e.headers)
+        return Response(
+            content=res_body,
+            status_code=e.code,
+            headers=res_headers
+        )
+    except Exception as e:
+        return Response(
+            content=f"Proxy error: {str(e)}",
+            status_code=502
+        )
 
-print("--> Launching Gradio Proxy Gateway...", flush=True)
-demo.launch()
+@app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"])
+async def proxy_api(request: Request, path: str):
+    return await proxy_request(request, path, "api")
+
+@app.api_route("/auth/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"])
+async def proxy_auth(request: Request, path: str):
+    return await proxy_request(request, path, "auth")
+
+@app.api_route("/socket.io/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"])
+async def proxy_socket(request: Request, path: str):
+    return await proxy_request(request, path, "socket.io")
+
+@app.get("/")
+async def root():
+    return Response(
+        content="<h1>Seatly API Gateway is Running</h1><p>The backend services are online and proxying requests successfully.</p>",
+        media_type="text/html"
+    )
+
+if __name__ == "__main__":
+    # Get port set dynamically by Hugging Face (default to 7860)
+    port = int(os.environ.get("PORT", 7860))
+    print(f"--> Starting FastAPI Gateway on port {port}...", flush=True)
+    uvicorn.run(app, host="0.0.0.0", port=port)
