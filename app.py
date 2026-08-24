@@ -3,11 +3,7 @@ import sys
 import urllib.request
 import subprocess
 
-# 1. Install httpx for proxying requests
-print("--> Installing python HTTP proxy client...", flush=True)
-subprocess.run("pip install httpx gradio", shell=True)
-
-# 2. Bypass Hugging Face ZeroGPU startup requirement
+# 1. Bypass Hugging Face ZeroGPU startup requirement
 try:
     import spaces
     @spaces.GPU
