@@ -1,12 +1,15 @@
 import os
 import sys
 import urllib.request
-import urllib.error
 import subprocess
 import threading
 import traceback
 
-# 1. Bypass Hugging Face ZeroGPU startup requirement
+# 1. Self-heal corrupted huggingface_hub package version
+print("--> Checking and self-healing Python package environment...", flush=True)
+subprocess.run("pip install --upgrade huggingface_hub==0.19.4", shell=True)
+
+# 2. Bypass Hugging Face ZeroGPU startup requirement
 try:
     import spaces
     @spaces.GPU
@@ -70,7 +73,7 @@ def setup_and_start_express():
 print("--> Launching background setup thread for Node.js backend...", flush=True)
 threading.Thread(target=setup_and_start_express, daemon=True).start()
 
-# 2. Start Gradio and FastAPI Reverse Proxy on port 7860 instantly in main thread
+# 3. Start Gradio and FastAPI Reverse Proxy on port 7860 instantly in main thread
 import gradio as gr
 from fastapi import Request
 from fastapi.responses import Response
