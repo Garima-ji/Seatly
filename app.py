@@ -42,24 +42,25 @@ def setup_and_start_express():
         subprocess.run("node -v", shell=True)
         subprocess.run("npm -v", shell=True)
 
+        # Create custom environment for the Express server to bind strictly to port 4000
+        express_env = os.environ.copy()
+        express_env["PORT"] = "4000"
+
         # Install node modules
         print("--> Installing Seatly backend dependencies (background)...", flush=True)
-        subprocess.run("npm install", shell=True, cwd="./backend")
+        subprocess.run("npm install", shell=True, cwd="./backend", env=express_env)
 
         # Compile TypeScript to JavaScript
         print("--> Building Seatly backend (background)...", flush=True)
-        subprocess.run("npm run build", shell=True, cwd="./backend")
-
-        # Force port 4000
-        os.environ["PORT"] = "4000"
+        subprocess.run("npm run build", shell=True, cwd="./backend", env=express_env)
 
         # Run migrations
         print("--> Running database migrations (background)...", flush=True)
-        subprocess.run("npm run migrate", shell=True, cwd="./backend")
+        subprocess.run("npm run migrate", shell=True, cwd="./backend", env=express_env)
 
         # Start Express server
         print("--> Starting Seatly Server on port 4000 (background)...", flush=True)
-        subprocess.run("npm run start", shell=True, cwd="./backend")
+        subprocess.run("npm run start", shell=True, cwd="./backend", env=express_env)
     except Exception as e:
         print(f"--> Express background setup failed: {str(e)}", flush=True)
 
