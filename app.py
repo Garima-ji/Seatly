@@ -4,6 +4,9 @@ import urllib.request
 import urllib.error
 import subprocess
 import threading
+import uvicorn
+from fastapi import FastAPI, Request
+from fastapi.responses import Response
 
 # 1. Bypass Hugging Face ZeroGPU startup requirement
 try:
@@ -69,24 +72,73 @@ def setup_and_start_express():
 print("--> Launching background setup thread for Node.js backend...", flush=True)
 threading.Thread(target=setup_and_start_express, daemon=True).start()
 
-# 2. Start Gradio and FastAPI Reverse Proxy on port 7860 instantly in main thread
+# 2. Start Uvicorn and FastAPI Reverse Proxy with mounted Gradio app
 import gradio as gr
-from fastapi import Request
-from fastapi.responses import Response
 
+app = FastAPI(title="Seatly Gateway API")
+
+EXPRESS_URL = "http://127.0.0.1:4000"
+
+# Custom HTTP Middleware to intercept and proxy API, Auth, and WebSocket requests
+@app.middleware("http")
+async def reverse_proxy_middleware(request: Request, call_next):
+    path = request.url.path
+    if path.startswith("/api/") or path.startswith("/auth/") or path.startswith("/socket.io/"):
+        method = request.method
+        headers = dict(request.headers)
+        headers.pop("host", None)
+        headers.pop("connection", None)  # Prevent keep-alive routing issues in urllib
+        
+        query_string = request.url.query
+        url = f"{EXPRESS_URL}{path}"
+        if query_string:
+            url += f"?{query_string}"
+            
+        body = await request.body()
+        
+        req = urllib.request.Request(
+            url,
+            data=body if body else None,
+            headers=headers,
+            method=method
+        )
+        
+        try:
+            with urllib.request.urlopen(req, timeout=60.0) as res:
+                res_body = res.read()
+                res_headers = dict(res.headers)
+                return Response(
+                    content=res_body,
+                    status_code=res.status,
+                    headers=res_headers
+                )
+        except urllib.error.HTTPError as e:
+            res_body = e.read()
+            res_headers = dict(e.headers)
+            return Response(
+                content=res_body,
+                status_code=e.code,
+                headers=res_headers
+            )
+        except Exception as e:
+            return Response(
+                content=f"Proxy error: {str(e)}",
+                status_code=502
+            )
+            
+    # For all other paths (including Gradio UI pages), continue normally
+    return await call_next(request)
+
+# Build Gradio UI blocks interface
 with gr.Blocks() as demo:
     gr.Markdown("# 🎟️ Seatly API Backend (ZeroGPU Proxy Gateway)")
     gr.Markdown("The Seatly Express backend is running in the background and served via this proxy.")
 
-app = demo.app
+# Mount Gradio app onto our FastAPI gateway instance
+app = gr.mount_gradio_app(app, demo, path="/")
 
-# Custom HTTP Middleware to intercept and proxy API, Auth, and WebSocket connection requests
-@app.middleware("http")
-async def reverse_proxy_middleware(request: Request, call_next):
-    return Response(
-        content=f"DIAGNOSTIC - Method: {request.method}, Path: {request.url.path}, Headers: {dict(request.headers)}",
-        status_code=200
-    )
-
-print("--> Launching Gradio Proxy Gateway...", flush=True)
-demo.launch()
+if __name__ == "__main__":
+    # Get port set dynamically by Hugging Face (default to 7860)
+    port = int(os.environ.get("PORT", 7860))
+    print(f"--> Starting FastAPI Gateway on port {port}...", flush=True)
+    uvicorn.run(app, host="0.0.0.0", port=port)
