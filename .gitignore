@@ -41,5 +41,10 @@ coverage/
 *.tsbuildinfo
 
 # Database
-local_database/
 backend/local_database/
+
+# Local Deployment Environments & IDE Sandbox
+Seatly/
+scratch/
+test_connection.ts
+
